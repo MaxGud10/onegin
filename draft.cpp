@@ -7,20 +7,45 @@
 const int MAX_ROWS = 15;
 const int MAX_COLS = 260;
 
-//int sort_string(char* pointers[], char text[][MAX_COLS]);
+int unpack_file(char (*text)[MAX_COLS], char* pointers[]);
+int clean_string(const char* src, char* dest);
 int sort_string(char* pointers[]);
 void str_cpy(char* dest, const char* src);
-int clean_string(const char* src, char* dest);
-//int print(char* pointers[], char text[][MAX_COLS]);
 int print(char* pointers[]);
 
 int main (void)
 {
-    char  text    [MAX_ROWS][MAX_COLS] = {};
-    char* pointers[MAX_ROWS]           = {}; // массив указателей
+    // Выделяем память для массива строк
+    char (*text)[MAX_COLS] = (char (*)[MAX_COLS])calloc(MAX_ROWS, sizeof(*text)); // объявление переменной, которая является указателем на массив из 260
+                                                                                 // sizeof(*text) вычисляет размер одного элемента на который указывает text 
+                                                                                 // sizeof(*text) = MAX_COLS*sizeof(char)
+    assert(text != NULL);
+
+    // Выделяем память для массива указателей
+    char** pointers = (char**)calloc(MAX_ROWS, sizeof(char*)); // объявляем переменную pointers которая является указателем на указатель типа char
+                                                               // pointers будет хранить адреса строк, каждая из которых будет являться массивом символов 
+                                                               // sizeof(char*) вычисляет размер одного указателя
+    assert(pointers != NULL);
 
     printf("<<<< ANIME file opening\n");
+    
+    unpack_file(text, pointers);
 
+    printf("<<<<< sort_string\n");
+    sort_string(pointers); 
+    printf("<<<<< sort_string\n");
+
+    printf("calling print():\n");
+    print(pointers);
+
+    free(pointers);
+    free(text);
+
+    return 0;
+}
+
+int unpack_file(char (*text)[MAX_COLS], char* pointers[])
+{
     FILE* file = fopen("onegin.txt", "r");
 
     if (file == NULL)
@@ -52,17 +77,6 @@ int main (void)
     printf("calling fclose...\n");
     fclose(file);
     printf("exited from fclose\n");
-
-
-    printf("<<<<< sort_string\n");
-    //sort_string(pointers, text); 
-    sort_string(pointers); // Передаем массив указателей и массив текст
-    printf("<<<<< sort_string\n");
-
-    printf("calling print():\n");
-    //print(pointers, text);
-    print(pointers); // Печатаем с использованием указателей
-
     return 0;
 }
 
@@ -83,7 +97,6 @@ int clean_string(const char* src, char* dest) // const char* src - указат�
     return *dest = '\0';
 }
 
-//int sort_string(char* pointers[], char text[][MAX_COLS])
 int sort_string(char* pointers[])
 {
     char ded    [MAX_COLS] = "";
@@ -134,14 +147,13 @@ void str_cpy(char* dest, const char* src)
     }
 }
 
-//int print(char* pointers[], char text[][MAX_COLS])
 int print(char* pointers[])
 {
     printf("THE TEXT:\n\n");
 
     for (int i = 0; i < MAX_ROWS; i++) 
     {
-        if (pointers[i] != NULL) // Проверка, чтобы избежать вывода NULL
+        if (pointers[i] != NULL && pointers[i][0] != '\0') // Проверка, чтобы избежать вывода NULL
         {
             printf("<<< i = %02d: ", i);
             printf("<%s>\n", pointers[i]);
