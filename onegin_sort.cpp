@@ -9,9 +9,6 @@
 
 const int MAX_ROWS = 100;
 
-const char *TEXT_ONEGIN1 = "onegin.txt";
-const char *TEXT_ONEGIN2 = "onegin_1.txt";
-
 enum OneginError
 {
     ONEGIN_FILE_NO_OPEN              = -1,
@@ -85,7 +82,7 @@ int main (int arg_c, const char* arg_v[])
     OneginError ddlx = process_file (&onegin, txt_file);
     if (ddlx != ONEGIN_STATUS_OK)
     {
-        //print_error_message (error);
+        print_error_message (ddlx);
         //enum OneginError error = print_error_messega (er)
 
         return ddlx;
@@ -139,15 +136,15 @@ enum OneginError process_file (struct Text_t* onegin, const char* txt_file) // T
         return error; 
     }
     
- // надо сделаь цикл через структуру string_t
-    int lines = 0; // 
-    ((onegin->data) [lines]).str = onegin->buffer; // onegin->buffer + 0
+    int lines = 0;  
+    ((onegin->data) [lines]).str = onegin->buffer;
     lines++;
     //for (int position = 0; position < onegin->onegin->data.tlen_str; position++) //  цикл по всем символам из буфера. если начало строки,
     for (int position = 0; position < onegin->buffer_len; position++) // 
-    {                                                           // (onegin->data.len_str)
+    {  
         if ((onegin->buffer) [position] == '\n')
         {
+            printf("ded loh");
             printf ("< <pointers (%p)> > = buffer (%s) + position (%d)\n", onegin -> pointers, onegin->buffer, position + 1);
             (onegin->data) [lines].str = onegin->buffer + position + 1; // присваивает адрес первого элемента из масcива buffer в массив position  
             
@@ -155,19 +152,20 @@ enum OneginError process_file (struct Text_t* onegin, const char* txt_file) // T
 
             int len = strchr ((onegin->data)[lines].str, '\n') - (onegin->data)[lines].str - 1;
             assert(len >= 0);
-            //size_t str_len = strlen((onegin->data)[lines].str);
             printf("\n**lines = %d, len = %d, stroka = (%s), \n", lines, len, (onegin->data) [lines].str);
-            //(onegin->data) [lines].str 
 
             lines++; 
         }
+        printf("...ded loh...");
 
         if (onegin->buffer [position] == '\r')
         {
+            printf("__ded loh__");
             printf ("\nonegin->buffer = %p\n", onegin->buffer);
             onegin->buffer [position] = '\0';
             continue;
         }
+        printf("position = %d\n", position);
 
         printf("symbol_end = <%c>, => (%s)\n", onegin->buffer [position], onegin->buffer [position] );
 
@@ -205,8 +203,8 @@ enum OneginError read_file (struct Text_t* onegin, const char* txt_file) // TODO
     int num_symbol = fread (onegin->buffer, sizeof (char), onegin->buffer_len, file); // ? onegin->data[0].len_str
     fclose (file);
 
-    onegin->buffer[num_symbol    ] ='\r'; 
-    onegin->buffer[num_symbol + 1] = '\n';
+    onegin->buffer[num_symbol    ] = '$'; 
+    onegin->buffer[num_symbol + 1] = '#';
 
     if (num_symbol != (onegin->buffer_len))
         printf ("ERRMSG: num_symbol (%d) != onegin->buffer_len (%d)\n", num_symbol, onegin->buffer_len);
@@ -224,10 +222,6 @@ enum OneginError read_file (struct Text_t* onegin, const char* txt_file) // TODO
             printf ("\nCOUNT = %d\n", num_lines);
         } 
     }
-
-
-
-//  onegin->lines_number = CountSymbol (onegin->buffer, onegin->buffer_len, '\n');
  
     onegin->lines_number = num_lines + 1;
 
@@ -252,7 +246,6 @@ enum OneginError alloc_buffer (struct Text_t* onegin, const char* txt_file)
     }
 
     char* tmp_buffer = (char*) calloc (size + 3, sizeof (char)); // выделяю память для буфера //TODO: +1 для \0
-    printf("++___tmp_buffer___++\n");
 
     if (tmp_buffer == NULL) 
     {
@@ -261,10 +254,8 @@ enum OneginError alloc_buffer (struct Text_t* onegin, const char* txt_file)
     }
 
     onegin->buffer   = tmp_buffer; 
-    printf("??data??\n");
-    onegin->buffer_len = size + 3;
-    printf("??size??\n");
-    printf("size = %d\n", size + 3);
+    onegin->buffer_len = size + 3; // +3
+    printf("\nsize = %d\n", size + 3);
 
     return ONEGIN_STATUS_OK;
 }
@@ -284,12 +275,6 @@ OneginError alloc_pointers (struct Text_t* onegin)
     printf("<<<< alloc_pointers\n");
     //char** tmp_pointers = (char**) calloc (onegin->lines_number + 1, sizeof (char*));
     struct  String_t* alloc = (struct String_t*) calloc (onegin->lines_number, sizeof(struct String_t)); 
-
-    /*if (tmp_pointers == NULL)
-    {
-        printf ("Incorrect memory allocation in tmp_pointers\n");
-        return ONEGIN_ERROR_ALLOCATION_POINTERS;
-    }*/
 
    if (alloc == NULL)
    {
