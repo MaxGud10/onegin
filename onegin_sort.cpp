@@ -1,5 +1,3 @@
-#define DEBUG
-
 #include <TXLib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,15 +7,17 @@
 #include <ctype.h> 
 #include <unistd.h> // TODO: на файлы разбить
 
+//#define DEBUG
+
 #ifdef DEBUG
     #define DBG  if (1)
 #else
     #define DBG  if (0) 
 #endif
-
+// TODO сделай assert!!!!
 enum OneginError
 {
-    ONEGIN_ERROR_FILE_NO_OPEN        = -1, // TODO: сделать общую приставку ERROR
+    ONEGIN_ERROR_FILE_NO_OPEN        = -1,
     ONEGIN_ERROR_ALLOCATION_BUFFER   = -2,
     ONEGIN_ERROR_ALLOCATION_POINTERS = -3,
     ERRO_R                           = -4,
@@ -48,7 +48,7 @@ enum OneginError process_file         (struct Text_info* onegin, const char* txt
 enum OneginError read_file            (struct Text_info* onegin, const char* txt_file);
 enum OneginError alloc_buffer         (struct Text_info* onegin, const char* txt_file);
 OneginError      alloc_pointers       (struct Text_info* onegin);
-int              do_process           (struct Text_info* onegin, int lines);
+int              do_process           (struct Text_info* onegin);
 int              file_get_length      (const char* str);
 int              count_string         (struct Text_info* onegin, char ddlx);
 int              print_lines          (const char* str);
@@ -67,17 +67,17 @@ void             cod_sym              (const char* str); // для отладк�
 
 int              print                (struct Text_info* onegin);
 void             check_strings_array  (struct Text_info* onegin);
-
+// TODO сделай assert!!!!
 int main (int arg_c, const char* arg_v[]) 
 {
     printf ("arg_c = %d, arg_v[0] = %s, arg_v[1] = %s", arg_c, arg_v[0], arg_v[1]);
 
     if (arg_c != 2) 
     {
-        printf ("Usage: %s <filename>\n", arg_v[0]); 
-        printf("You need to enter it ./do and after the file with the text that will need to be sorted\n"
-               "for example:\n"
-               "./do onegin.txt");
+        printf ("Usage: %s <filename>\n"
+                "You need to enter it ./do and after the file with the text that will need to be sorted\n"
+                "for example:\n"
+                "./do onegin.txt", arg_v[0]);
         return -1;
     }   
 
@@ -162,11 +162,12 @@ enum OneginError process_file (struct Text_info* onegin, const char* txt_file)
         return error; 
     }
 
-    int lines = 0;  
-    ((onegin->data) [lines]).str = onegin->buffer;
-    lines++;
+ 
+    /*((onegin->data) [lines]).str = onegin->buffer;
+    lines++;*/
         // TODO сделать в одну функцию и возвращать через return lines
-    do_process(onegin, lines);
+    int lines = do_process(onegin);
+
 
     /*lines++;
     //  цикл по всем символам из буфера. если начало строки,
@@ -201,22 +202,36 @@ enum OneginError process_file (struct Text_info* onegin, const char* txt_file)
         DBG printf("position = %d\n", position);
 
         DBG printf("\nsymbol_end = <%c> => (%d)\n", onegin->buffer [position], onegin->buffer [position] );
-    }*/
-    $(((onegin->data) [lines]).str);
-    $((onegin->data)[lines].len_str);
+    // }*/
+    // $(onegin);
+    // $(onegin -> data);
+    // $(lines - 1); // lines - 1 потому что вышел за рамки массива 
+    // $(((onegin->data) [lines - 1]).str);
+    // $((onegin->data)  [lines] .len_str);
 
 
     for (int i = 0; i < lines; i++)   // сдлнф
     {
         DBG printf ("\n>>> printf_lines i = %d\n", i);
         print_lines((onegin->data [i].str));
-    } // TODO: сделать функцию для распечатки
+    } 
 
     return ONEGIN_STATUS_OK;
 }
 
-int do_process(struct Text_info* onegin, int lines)
+int do_process(struct Text_info* onegin)
 {
+    int lines = 0;
+    ((onegin->data) [lines]).str = onegin->buffer;
+
+    char* fist_string = strchr ((onegin->data)[lines].str, '\n');
+    int len = fist_string - (onegin->data)[lines].str - 1; // [x] - 1 -> потому что есть \n
+    (onegin->data)[lines].len_str = len;
+    
+    //$((onegin->data)  [lines] .len_str);    
+
+    lines++;
+
     //  цикл по всем символам из буфера. если начало строки,
     for (int position = 0; position < onegin->buffer_len; position++) // TODO: функция пусть выделяет память под массив указателей и расставляет их
     {  
@@ -227,14 +242,17 @@ int do_process(struct Text_info* onegin, int lines)
             (onegin->data) [lines].str = onegin->buffer + position + 1; // присваивает адрес первого элемента из масcива buffer в массив position  
             
             char* chr = strchr ((onegin->data)[lines].str, '\n');
-            int len = chr - (onegin->data)[lines].str;
+            len = chr - (onegin->data)[lines].str - 1; // [x] - 1 -> потому что есть \n
             if (chr == NULL)
             {
                 len = strlen ((onegin->data)[lines].str);  
-            }
+            } 
 // TODO сделать position + len 
             assert(len >= 0);
             (onegin->data)[lines].len_str = len;
+
+            DBG printf("\n---------------DED_LOH----------------\n");
+            //$((onegin->data)  [lines] .len_str);            
 
             DBG printf("\n**lines = %d, len = %d, stroka = (%s), \n", lines, len, (onegin->data) [lines].str);
 
@@ -255,9 +273,9 @@ int do_process(struct Text_info* onegin, int lines)
 
     DBG printf("<<<puts lines = %d\n", lines);
 
-    return 0;
+    return lines;
 }
-
+// TODO сделай assert!!!!
 enum OneginError read_file (struct Text_info* onegin, const char* txt_file) // TODO: разбить на более мелкие функции
 {
     FILE* file = fopen (txt_file, "rb");
@@ -281,24 +299,6 @@ enum OneginError read_file (struct Text_info* onegin, const char* txt_file) // T
 
     if (num_symbol != (onegin->buffer_len))
         printf ("ERRMSG: num_symbol (%d) != onegin->buffer_len (%d)\n", num_symbol, onegin->buffer_len);
-
-    //DBG printf ("\n<<<fread\n");
-    
-    /*int num_lines = 0; // количество строчек 
-    for (int i = 0; i < (onegin->buffer_len); i++) // цикл для прохождения по всем символам для проверки на \n  (сколько строк)
-    {
-        //DBG printf ("i = %d - buffer[i] = %d, buffer[i] ='%c'\n", i, (onegin -> buffer)[i], (onegin -> buffer)[i]);
-        
-        if ((onegin->buffer) [i] == '\n')
-        {
-            num_lines++;
-            DBG printf ("\nCOUNT = %d\n", num_lines);
-        } 
-    }
- 
-    onegin->lines_number = num_lines + 1;
-
-    DBG printf("lines_number = %d\n", onegin->lines_number);*/
 
     count_string(onegin, '\n');
     
@@ -362,7 +362,12 @@ int file_get_length (const char* str)
     struct stat buffer_len  = {}; 
 
     stat (str, &buffer_len);  
-    // TODO проверить на null 
+    if (stat == NULL)
+    {
+        printf("stat equal to null");
+        return -1;
+    }
+
     DBG printf ("text.st_size = %ld\n", buffer_len.st_size);
 
     return buffer_len.st_size;
@@ -442,7 +447,6 @@ void swap(void* data1, void* data2, size_t pointer_size)
     }
 }
 
-//int comparator_reverse (struct String_t*  str_line1, struct String_t* str_line2)
 int comparator_reverse (const void* str_line1,const void* str_line2)
 {
     const String_t* str1 = (const String_t*) str_line1;
@@ -454,14 +458,16 @@ int comparator_reverse (const void* str_line1,const void* str_line2)
     int length_1 = str1 -> len_str; // strlen (string1);
     int length_2 = str2 -> len_str;
 
-    printf(" str1 -> len_str = %d\n",  str1 -> len_str);
-    printf(" str2 -> len_str = %d\n",  str2 -> len_str);
+    // size_t length_1 = str1 -> len_str;
+    // size_t length_2 = str2 -> len_str;
 
-    printf("length1 = %s\n", string1);
-    printf("length2 = %s\n", string2);
+    DBG printf("str1 -> len_str = %d\n",  str1 -> len_str);
+    DBG printf("str2 -> len_str = %d\n",  str2 -> len_str);
 
+    DBG printf("length1 = %s\n", string1);
+    DBG printf("length2 = %s\n", string2);
 
-    // распечать массив из четырех срок 
+    // распечатать массив из четырех срок 
     assert ($(length_1) == $(strlen (string1)));
     assert ($(length_2) == $(strlen (string2)));
 
@@ -495,19 +501,11 @@ int comparator_reverse (const void* str_line1,const void* str_line2)
     }
 
     return 0;
-} 
-
-/*#ifdef NDEBUG
-    #define DBG            if (1) 
-    #define ASSERT(cond)   ;
-#else
-    #define DBG            if (1) 
-    #define ASSERT(cond)   if (! (cond)) { printf ("Your ASS in ERT\n"); abort(); }
-#endif*/
+}
 
 int comparator_forward (const void* str_line1, const void* str_line2) 
 {
-    //ASSERT (str_line1 != NULL);
+
 
     //$$;
     const char* string1 = ((const String_t*) str_line1)->str;
