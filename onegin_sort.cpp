@@ -20,7 +20,7 @@ enum OneginError
     ONEGIN_ERROR_FILE_NO_OPEN        = -1,
     ONEGIN_ERROR_ALLOCATION_BUFFER   = -2,
     ONEGIN_ERROR_ALLOCATION_POINTERS = -3,
-    ERRO_R                           = -4,
+    ERRO_R                           = -4, // TODO переименовать 
     ONEGIN_STATUS_OK                 =  0
 };
 
@@ -32,7 +32,7 @@ struct String_t
 
 typedef int (*compare_funct) (const void* str_line1, const void* str_line2);
 
-#define ded max
+#define ded max 
 
 struct Text_info // TODO: TextInfo переименовать
 {
@@ -42,6 +42,19 @@ struct Text_info // TODO: TextInfo переименовать
     int    lines_number;    // количество строчек 
     char*  ded;             // лох 
     struct String_t *data;  // массив указателей на строки 
+};
+
+struct Interval
+{
+    int low; 
+    int high; 
+};
+
+struct Stack
+{
+    struct Interval* data; // массив который хранит интервалы, которые мы будет сортировать 
+    int size;  // размер количества интервалов (ну то есть количество размера (ну то есть просто количество (ну вы поняли))) 
+               // ( которых мы будет сортировать (ну то есть сортировать (ударение важно (не то что вы подумали (ну вы поняли))) )
 };
 
 enum OneginError process_file         (struct Text_info* onegin, const char* txt_file); // TODO: выравнять аргументы
@@ -54,14 +67,20 @@ int              count_string         (struct Text_info* onegin, char ddlx);
 int              print_lines          (const char* str);
 void             print_error_message  (enum OneginError error);
 
-void             bubble_sort          (void* data,  int lines_number, size_t pointer_size, compare_funct);
+int              my_partition         (void* data,  int low, int high, size_t size, compare_funct comparator); 
+void             my_qsort             (void* data,  int n,             size_t size, compare_funct comparator);
+
+void             push                 (struct Stack* stack, int low, int high);
+void             pop                  (struct Stack* stack, struct Interval* interval);
+
+void             bubble_sort          (void* data,  int lines_number,  size_t pointer_size, compare_funct);
 
 void             swap                 (void* data1, void* data2,      size_t pointer_size);
 
 int              comparator_reverse   (const void* str_line1, const void* str_line2);
 int              comparator_forward   (const void* str_line1, const void* str_line2);
 int              check_excess_forward (const char* pointer);
-int              check_excess_reverse (const char* pointer, int length);
+int              check_excess_reverse (const char* pointer,   int length);
 
 void             cod_sym              (const char* str); // для отладки
 
@@ -94,12 +113,12 @@ int main (int arg_c, const char* arg_v[])
 
     DBG printf ("\n>>>> process_file\n");
     
-    OneginError ded_ne_loh = process_file (&onegin, txt_file); // TODO: название поменять
-    if (ded_ne_loh != ONEGIN_STATUS_OK)
+    OneginError ded_loh = process_file (&onegin, txt_file); // TODO: название поменять
+    if (ded_loh != ONEGIN_STATUS_OK)
     {
-        print_error_message (ded_ne_loh);
+        print_error_message (ded_loh);
 
-        return ded_ne_loh;
+        return ded_loh;
     }
 
     DBG printf ("\n<<<< process_file\n");
@@ -111,13 +130,21 @@ int main (int arg_c, const char* arg_v[])
     printf      ("reverse(1)");
     print       (&onegin);
 
-    bubble_sort (onegin.data, onegin.lines_number, sizeof(String_t), comparator_reverse);
-    printf      ("reverse(2)");
-    print       (&onegin);
+    my_qsort(onegin.data, onegin.lines_number, sizeof(String_t), comparator_reverse);
+    printf  ("reverse_qsort(2)");
+    print   (&onegin);
 
-    bubble_sort (onegin.data, onegin.lines_number, sizeof(String_t), comparator_forward); // сам массив, размер ячеек памяти для одной строчки
-    printf      ("forward(1)");
-    print       (&onegin);
+    my_qsort(onegin.data, onegin.lines_number, sizeof(String_t), comparator_forward);
+    printf  ("forward(3)");
+    print   (&onegin);
+
+    // bubble_sort (onegin.data, onegin.lines_number, sizeof(String_t), comparator_reverse);
+    // printf      ("reverse(2)");
+    // print       (&onegin);
+
+    // bubble_sort (onegin.data, onegin.lines_number, sizeof(String_t), comparator_forward); // сам массив, размер ячеек памяти для одной строчки
+    // printf      ("forward(1)");
+    // print       (&onegin);
     
     // TODO сделать в функцию очистку памяти 
     free (onegin.buffer);
@@ -162,46 +189,8 @@ enum OneginError process_file (struct Text_info* onegin, const char* txt_file)
         return error; 
     }
 
- 
-    /*((onegin->data) [lines]).str = onegin->buffer;
-    lines++;*/
-        // TODO сделать в одну функцию и возвращать через return lines
     int lines = do_process(onegin);
 
-
-    /*lines++;
-    //  цикл по всем символам из буфера. если начало строки,
-    for (int position = 0; position < onegin->buffer_len; position++) // TODO: функция пусть выделяет память под массив указателей и расставляет их
-    {  
-        if ((onegin->buffer) [position] == '\n')
-        {
-            DBG printf("ded loh\n");
-            DBG printf ("< <pointers (%p)> > = buffer (%s) + position (%d)\n", onegin -> pointers, onegin->buffer, position + 1);
-            (onegin->data) [lines].str = onegin->buffer + position + 1; // присваивает адрес первого элемента из масcива buffer в массив position  
-            
-            char* chr = strchr ((onegin->data)[lines].str, '\n');
-            int len =  chr - (onegin->data)[lines].str;
-            if ( chr == NULL)
-            {
-                len = strlen((onegin->data)[lines].str);  
-            }
-
-            assert(len >= 0);
-            (onegin->data)[lines].len_str = len;
-
-            DBG printf("\n**lines = %d, len = %d, stroka = (%s), \n", lines, len, (onegin->data) [lines].str);
-
-            lines++; 
-        }
-
-        if (onegin->buffer [position] == '\r')
-        {
-            DBG printf ("\nonegin->buffer = %p\n", onegin->buffer);
-            onegin->buffer [position] = '\0';
-        }
-        DBG printf("position = %d\n", position);
-
-        DBG printf("\nsymbol_end = <%c> => (%d)\n", onegin->buffer [position], onegin->buffer [position] );
     // }*/
     // $(onegin);
     // $(onegin -> data);
@@ -405,8 +394,77 @@ int print_lines (const char* str)
     return 0;
 }
 
+int my_partition (void* data, int low, int high, size_t size, compare_funct comparator) 
+{
+    char* arr = (char*)data;
+    char* pivot = arr + high * size;
+    int x = low - 1; // TODO переименовать x and y 
 
-//int bubble_sort (struct Text_info *onegin, size_t size, int(*comparator_forward(String_t*, String_t*))) // перераспределение ( партишин )
+    DBG printf("\nPartitioning with pivot = %d from %d to %d\n", *((int*)pivot), low, high);
+
+    for (int y = low; y <= high - 1; y++) 
+    {
+        if (comparator(arr + y * size, pivot) < 0) 
+        {
+            x++;
+
+            swap(arr + x * size, arr + y * size, size);
+            printf("\nSwapping elements\n");
+        }
+    }
+
+    swap(arr + (x + 1) * size, arr + high * size, size);
+    return (x + 1);
+}
+
+void my_qsort (void* data, int n, size_t size, compare_funct comparator) 
+{
+    struct Stack stack = {};
+
+    int low  = 0;
+    int high = n - 1;
+
+    //push (&stack, struct Interval { low, high });
+    push(&stack, low, high);
+
+    while (stack.size > 0) 
+    {
+        struct Interval interval = {};
+
+        pop (&stack, &interval);
+
+        low  = interval.low;
+        high = interval.high;
+
+        if (low < high) 
+        {
+            int pi = my_partition(data, low, high, size, comparator);
+
+            push(&stack, pi + 1, high);
+            push(&stack, low, pi - 1);
+        }
+    }
+    
+    free(stack.data);
+}
+
+void push (struct Stack* stack, int low, int high) 
+{
+    stack -> size++;  // для добавления нового элемента  в стек 
+    stack -> data = (struct Interval*) realloc (stack->data, stack->size * sizeof(struct Interval)); // (stack->size * sizeof(struct Interval) мы умножаем size на размер одного элемента struct Interval 
+    stack -> data[stack->size - 1].low = low; // мы устанавливает новый уровень low для нового интервала 
+    stack -> data[stack->size - 1].high = high;
+}
+
+void pop (struct Stack* stack, struct Interval* interval)
+{
+    if (stack -> size <= 0) return; // проверка на наличие элементов 
+    
+    *interval = stack -> data[stack -> size - 1]; // последний интервал находящийся на вершине стека, сохраняется в переменную, на котоую указывает *interval 
+    stack -> size --;  // уменьшаем размер стека после извлечения последнего элемента из стека 
+    stack -> data = (struct Interval*) realloc (stack -> data, stack -> size * sizeof(struct Interval)); // память распределяется в соответствии с новым количеством элементов 
+}
+
 void bubble_sort (void* data, int lines_number, size_t pointer_size, compare_funct comparator)
 {
     for (int i = 0; i < (lines_number) - 1; i++)// onegin->dta.len_str
